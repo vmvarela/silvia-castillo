@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target universal-apple-darwin
+          - platform: ubuntu-22.04
+            args: ''
+          - platform: windows-latest
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar dependencias del sistema (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Instalar Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('src-tauri/Cargo.lock') }}
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: npm install
+        run: npm ci
+
+      - name: Build y publicar release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Castillo de Silvia ${{ github.ref_name }}'
+          releaseBody: |
+            ## Castillo de Silvia ${{ github.ref_name }}
+
+            Descarga el instalador para tu sistema operativo.
+
+            ### Instalación
+            - **macOS**: Descarga el `.dmg`, ábrelo y arrastra la app a Aplicaciones
+            - **Linux**: Descarga el `.AppImage` y dale permisos de ejecución
+            - **Windows**: Descarga el `.msi` y sigue el asistente
+
+            > **Nota**: La primera vez que abras la app en macOS/Windows puede aparecer un aviso
+            > de "aplicación no verificada". En macOS: botón derecho → Abrir. En Windows: "Más
+            > información" → "Ejecutar de todas formas".
+          releaseDraft: true
+          prerelease: false
+          tauriScript: npx tauri
+          args: ${{ matrix.args }}
