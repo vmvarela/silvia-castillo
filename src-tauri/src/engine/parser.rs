@@ -4,7 +4,7 @@ use crate::engine::ast::{
 
 pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
     let raw = input.to_string();
-    let tokens: Vec<&str> = input.trim().split_whitespace().collect();
+    let tokens: Vec<&str> = input.split_whitespace().collect();
     if tokens.is_empty() {
         return Err("Comando vacío".to_string());
     }
@@ -150,9 +150,7 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
                 state.command = Some(CommandKind::DeleteChain(name));
             }
             "-p" | "--protocol" => {
-                let val = iter
-                    .next()
-                    .ok_or_else(|| "Falta protocolo".to_string())?;
+                let val = iter.next().ok_or_else(|| "Falta protocolo".to_string())?;
                 state.matches.push(Match {
                     negated: state.negated,
                     kind: MatchKind::Protocol(val.to_string()),
@@ -160,9 +158,7 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
                 state.negated = false;
             }
             "-s" | "--source" | "--src" => {
-                let val = iter
-                    .next()
-                    .ok_or_else(|| "Falta origen".to_string())?;
+                let val = iter.next().ok_or_else(|| "Falta origen".to_string())?;
                 state.matches.push(Match {
                     negated: state.negated,
                     kind: MatchKind::Source(val.to_string()),
@@ -170,9 +166,7 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
                 state.negated = false;
             }
             "-d" | "--destination" | "--dst" => {
-                let val = iter
-                    .next()
-                    .ok_or_else(|| "Falta destino".to_string())?;
+                let val = iter.next().ok_or_else(|| "Falta destino".to_string())?;
                 state.matches.push(Match {
                     negated: state.negated,
                     kind: MatchKind::Destination(val.to_string()),
@@ -224,9 +218,7 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
                 let _ = iter.next();
             }
             "--state" => {
-                let val = iter
-                    .next()
-                    .ok_or_else(|| "Falta estado".to_string())?;
+                let val = iter.next().ok_or_else(|| "Falta estado".to_string())?;
                 let states: Vec<String> = val.split(',').map(|s| s.to_string()).collect();
                 state.matches.push(Match {
                     negated: state.negated,
@@ -235,9 +227,7 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
                 state.negated = false;
             }
             "--ctstate" => {
-                let val = iter
-                    .next()
-                    .ok_or_else(|| "Falta ctstate".to_string())?;
+                let val = iter.next().ok_or_else(|| "Falta ctstate".to_string())?;
                 let states: Vec<String> = val.split(',').map(|s| s.to_string()).collect();
                 state.matches.push(Match {
                     negated: state.negated,
@@ -246,9 +236,7 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
                 state.negated = false;
             }
             "--icmp-type" => {
-                let val = iter
-                    .next()
-                    .ok_or_else(|| "Falta tipo ICMP".to_string())?;
+                let val = iter.next().ok_or_else(|| "Falta tipo ICMP".to_string())?;
                 state.matches.push(Match {
                     negated: state.negated,
                     kind: MatchKind::IcmpType(val.to_string()),
@@ -256,9 +244,7 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
                 state.negated = false;
             }
             "--comment" => {
-                let val = iter
-                    .next()
-                    .ok_or_else(|| "Falta comentario".to_string())?;
+                let val = iter.next().ok_or_else(|| "Falta comentario".to_string())?;
                 state.matches.push(Match {
                     negated: state.negated,
                     kind: MatchKind::Comment(val.to_string()),
@@ -298,11 +284,9 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
                         .next()
                         .ok_or_else(|| "Falta valor para --to-source".to_string())?;
                     *to = val.to_string();
-                } else {
-                    if let Some(&next) = iter.peek() {
-                        if !next.starts_with('-') && next != "!" {
-                            iter.next();
-                        }
+                } else if let Some(&next) = iter.peek() {
+                    if !next.starts_with('-') && next != "!" {
+                        iter.next();
                     }
                 }
             }
@@ -312,11 +296,9 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
                         .next()
                         .ok_or_else(|| "Falta valor para --reject-with".to_string())?;
                     *with = Some(val.to_string());
-                } else {
-                    if let Some(&next) = iter.peek() {
-                        if !next.starts_with('-') && next != "!" {
-                            iter.next();
-                        }
+                } else if let Some(&next) = iter.peek() {
+                    if !next.starts_with('-') && next != "!" {
+                        iter.next();
                     }
                 }
             }
@@ -326,11 +308,9 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
                         .next()
                         .ok_or_else(|| "Falta valor para --log-prefix".to_string())?;
                     *prefix = Some(val.to_string());
-                } else {
-                    if let Some(&next) = iter.peek() {
-                        if !next.starts_with('-') && next != "!" {
-                            iter.next();
-                        }
+                } else if let Some(&next) = iter.peek() {
+                    if !next.starts_with('-') && next != "!" {
+                        iter.next();
                     }
                 }
             }
@@ -349,7 +329,11 @@ pub fn parse_line(input: &str) -> Result<ParsedRule, String> {
     }
 
     let command = build_command(state)?;
-    Ok(ParsedRule { table, command, raw })
+    Ok(ParsedRule {
+        table,
+        command,
+        raw,
+    })
 }
 
 fn parse_chain(s: &str) -> Chain {
@@ -373,9 +357,7 @@ fn parse_port_spec(s: &str) -> Result<PortSpec, String> {
             .map_err(|_| format!("Puerto inválido: {}", end))?;
         Ok(PortSpec { start, end })
     } else {
-        let port: u16 = s
-            .parse()
-            .map_err(|_| format!("Puerto inválido: {}", s))?;
+        let port: u16 = s.parse().map_err(|_| format!("Puerto inválido: {}", s))?;
         Ok(PortSpec {
             start: port,
             end: port,
@@ -454,7 +436,11 @@ mod tests {
         let r = parse_line("iptables -A INPUT -j ACCEPT").unwrap();
         assert!(matches!(r.table, Table::Filter));
         match r.command {
-            RuleCommand::Append { chain, matches, target } => {
+            RuleCommand::Append {
+                chain,
+                matches,
+                target,
+            } => {
                 assert_eq!(chain, Chain::Input);
                 assert!(matches.is_empty());
                 assert!(matches!(target, Target::Accept));
@@ -467,12 +453,19 @@ mod tests {
     fn test_tcp_dport() {
         let r = parse_line("iptables -A INPUT -p tcp --dport 22 -j ACCEPT").unwrap();
         match r.command {
-            RuleCommand::Append { chain, matches, target } => {
+            RuleCommand::Append {
+                chain,
+                matches,
+                target,
+            } => {
                 assert_eq!(chain, Chain::Input);
                 assert!(matches!(target, Target::Accept));
                 assert_eq!(matches.len(), 2);
                 assert!(matches!(matches[0].kind, MatchKind::Protocol(ref s) if s == "tcp"));
-                assert!(matches!(matches[1].kind, MatchKind::DPort(PortSpec { start: 22, end: 22 })));
+                assert!(matches!(
+                    matches[1].kind,
+                    MatchKind::DPort(PortSpec { start: 22, end: 22 })
+                ));
             }
             _ => panic!("Expected Append"),
         }
@@ -482,11 +475,17 @@ mod tests {
     fn test_source_drop() {
         let r = parse_line("iptables -A FORWARD -s 192.168.1.0/24 -j DROP").unwrap();
         match r.command {
-            RuleCommand::Append { chain, matches, target } => {
+            RuleCommand::Append {
+                chain,
+                matches,
+                target,
+            } => {
                 assert_eq!(chain, Chain::Forward);
                 assert!(matches!(target, Target::Drop));
                 assert_eq!(matches.len(), 1);
-                assert!(matches!(matches[0].kind, MatchKind::Source(ref s) if s == "192.168.1.0/24"));
+                assert!(
+                    matches!(matches[0].kind, MatchKind::Source(ref s) if s == "192.168.1.0/24")
+                );
             }
             _ => panic!("Expected Append"),
         }
@@ -496,11 +495,21 @@ mod tests {
     fn test_no_prefix() {
         let r = parse_line("-A INPUT -p tcp --dport 80:443 -j ACCEPT").unwrap();
         match r.command {
-            RuleCommand::Append { chain, matches, target } => {
+            RuleCommand::Append {
+                chain,
+                matches,
+                target,
+            } => {
                 assert_eq!(chain, Chain::Input);
                 assert!(matches!(target, Target::Accept));
                 assert_eq!(matches.len(), 2);
-                assert!(matches!(matches[1].kind, MatchKind::DPort(PortSpec { start: 80, end: 443 })));
+                assert!(matches!(
+                    matches[1].kind,
+                    MatchKind::DPort(PortSpec {
+                        start: 80,
+                        end: 443
+                    })
+                ));
             }
             _ => panic!("Expected Append"),
         }
@@ -519,7 +528,9 @@ mod tests {
     fn test_flush_chain() {
         let r = parse_line("iptables -F INPUT").unwrap();
         match r.command {
-            RuleCommand::Flush { chain: Some(Chain::Input) } => {}
+            RuleCommand::Flush {
+                chain: Some(Chain::Input),
+            } => {}
             _ => panic!("Expected Flush INPUT"),
         }
     }
@@ -556,11 +567,15 @@ mod tests {
     fn test_negation() {
         let r = parse_line("iptables -A INPUT ! -s 192.168.1.0/24 -j DROP").unwrap();
         match r.command {
-            RuleCommand::Append { matches, target, .. } => {
+            RuleCommand::Append {
+                matches, target, ..
+            } => {
                 assert!(matches!(target, Target::Drop));
                 assert_eq!(matches.len(), 1);
                 assert!(matches[0].negated);
-                assert!(matches!(matches[0].kind, MatchKind::Source(ref s) if s == "192.168.1.0/24"));
+                assert!(
+                    matches!(matches[0].kind, MatchKind::Source(ref s) if s == "192.168.1.0/24")
+                );
             }
             _ => panic!("Expected Append"),
         }
@@ -570,10 +585,14 @@ mod tests {
     fn test_state_match() {
         let r = parse_line("iptables -A INPUT -m state --state NEW,ESTABLISHED -j ACCEPT").unwrap();
         match r.command {
-            RuleCommand::Append { matches, target, .. } => {
+            RuleCommand::Append {
+                matches, target, ..
+            } => {
                 assert!(matches!(target, Target::Accept));
                 assert_eq!(matches.len(), 1);
-                assert!(matches!(matches[0].kind, MatchKind::State(ref v) if v == &["NEW", "ESTABLISHED"]));
+                assert!(
+                    matches!(matches[0].kind, MatchKind::State(ref v) if v == &["NEW", "ESTABLISHED"])
+                );
             }
             _ => panic!("Expected Append"),
         }
@@ -581,13 +600,19 @@ mod tests {
 
     #[test]
     fn test_unknown_flags_ignored() {
-        let r = parse_line("iptables -A INPUT -p tcp --dport 22 --unknown-flag value -j DROP").unwrap();
+        let r =
+            parse_line("iptables -A INPUT -p tcp --dport 22 --unknown-flag value -j DROP").unwrap();
         match r.command {
-            RuleCommand::Append { matches, target, .. } => {
+            RuleCommand::Append {
+                matches, target, ..
+            } => {
                 assert!(matches!(target, Target::Drop));
                 assert_eq!(matches.len(), 2);
                 assert!(matches!(matches[0].kind, MatchKind::Protocol(ref s) if s == "tcp"));
-                assert!(matches!(matches[1].kind, MatchKind::DPort(PortSpec { start: 22, end: 22 })));
+                assert!(matches!(
+                    matches[1].kind,
+                    MatchKind::DPort(PortSpec { start: 22, end: 22 })
+                ));
             }
             _ => panic!("Expected Append"),
         }

@@ -1,6 +1,6 @@
+use crate::engine::ast::{Chain, ParsedRule, RuleCommand, Table, Target};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use crate::engine::ast::{Chain, ParsedRule, RuleCommand, Table, Target};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChainState {
@@ -101,9 +101,9 @@ impl Ruleset {
                 chain_state.policy = Some(target.clone());
                 Ok(())
             }
-            RuleCommand::List { .. }
-            | RuleCommand::NewChain(_)
-            | RuleCommand::DeleteChain(_) => Ok(()), // no-op for Fase 1
+            RuleCommand::List { .. } | RuleCommand::NewChain(_) | RuleCommand::DeleteChain(_) => {
+                Ok(())
+            } // no-op for Fase 1
         }
     }
 
@@ -160,7 +160,10 @@ impl From<&Ruleset> for RulesetView {
 fn chain_to_view(name: &str, chain: &ChainState) -> ChainView {
     ChainView {
         name: name.to_string(),
-        policy: chain.policy.as_ref().map(|t| format!("{:?}", t).to_uppercase()),
+        policy: chain
+            .policy
+            .as_ref()
+            .map(|t| format!("{:?}", t).to_uppercase()),
         rules: chain
             .rules
             .iter()

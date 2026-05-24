@@ -36,6 +36,7 @@ impl Trace {
     }
 
     /// Devuelve el estado del paquete en el último paso registrado.
+    #[allow(dead_code)]
     pub fn last_pkt(&self) -> Option<&Packet> {
         self.steps.last().map(|s| &s.pkt)
     }

@@ -7,14 +7,12 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::engine::packet::{
-        parse_state_bit, Packet, Proto, STATE_ESTABLISHED, STATE_NEW,
-    };
+    use crate::engine::packet::{parse_state_bit, Packet, Proto, STATE_ESTABLISHED, STATE_NEW};
     use crate::engine::parser::parse_line;
     use crate::engine::pipeline::{evaluate, FinalVerdict};
     use crate::engine::ruleset::Ruleset;
     use crate::engine::topology::{topology_from_level, Topology};
-    use crate::levels::{Level, load_all};
+    use crate::levels::{load_all, Level};
 
     // ──────────────────────────────────────────────────────────────────
     // Helpers
@@ -22,11 +20,7 @@ mod tests {
 
     /// Construye una Topology a partir de la descripción de red del nivel.
     fn topo_from_level(lvl: &Level) -> Topology {
-        topology_from_level(
-            &lvl.red.firewall_ip,
-            &lvl.red.interfaces,
-            &lvl.red.hosts,
-        )
+        topology_from_level(&lvl.red.firewall_ip, &lvl.red.interfaces, &lvl.red.hosts)
     }
 
     /// Aplica políticas + reglas iniciales del nivel + comandos del jugador.
@@ -93,17 +87,16 @@ mod tests {
                 "ACCEPT" => FinalVerdict::Accept,
                 "DROP" => FinalVerdict::Drop,
                 "REJECT" => FinalVerdict::Reject,
-                other => panic!("Esperado desconocido en prueba '{}': {other}", prueba.descripcion),
+                other => panic!(
+                    "Esperado desconocido en prueba '{}': {other}",
+                    prueba.descripcion
+                ),
             };
 
             assert_eq!(
-                verdict,
-                expected,
+                verdict, expected,
                 "Nivel '{}' — prueba '{}': esperado {:?}, obtenido {:?}",
-                lvl.id,
-                prueba.descripcion,
-                expected,
-                verdict,
+                lvl.id, prueba.descripcion, expected, verdict,
             );
         }
     }

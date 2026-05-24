@@ -168,8 +168,12 @@ fn eval_chain(
     for (i, rule) in rules.iter().enumerate() {
         // Extraer matches y target del comando (solo Append/Insert contienen reglas activas)
         let (matches, target) = match &rule.command {
-            RuleCommand::Append { matches, target, .. }
-            | RuleCommand::Insert { matches, target, .. } => (matches, target),
+            RuleCommand::Append {
+                matches, target, ..
+            }
+            | RuleCommand::Insert {
+                matches, target, ..
+            } => (matches, target),
             _ => continue,
         };
 
@@ -189,8 +193,15 @@ fn eval_chain(
             InternalVerdict::Return => return (InternalVerdict::Return, new_pkt),
             InternalVerdict::Jump(ref chain_name) => {
                 let target_chain = chain_name.clone();
-                let (sub_v, sub_pkt) =
-                    eval_chain(ruleset, topo, &new_pkt, table, &target_chain, depth + 1, trace);
+                let (sub_v, sub_pkt) = eval_chain(
+                    ruleset,
+                    topo,
+                    &new_pkt,
+                    table,
+                    &target_chain,
+                    depth + 1,
+                    trace,
+                );
                 match sub_v {
                     // RETURN desde cadena de usuario → continuar en la cadena padre
                     InternalVerdict::Return | InternalVerdict::Continue => {
@@ -332,7 +343,8 @@ mod tests {
         use crate::engine::parser::parse_line;
         let mut rs = Ruleset::new();
         rs.apply(&parse_line("-P INPUT DROP").unwrap()).unwrap();
-        rs.apply(&parse_line("-A INPUT -p tcp --dport 80 -j ACCEPT").unwrap()).unwrap();
+        rs.apply(&parse_line("-A INPUT -p tcp --dport 80 -j ACCEPT").unwrap())
+            .unwrap();
         let (v, _) = evaluate(&rs, None, packet_tcp_80());
         assert_eq!(v, FinalVerdict::Accept);
         // Puerto 443 debería caer

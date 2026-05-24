@@ -17,7 +17,10 @@ pub fn matches_packet(m: &Match, pkt: &Packet) -> bool {
         MatchKind::InInterface(i) => iface_matches(&pkt.in_iface, i),
         MatchKind::OutInterface(i) => iface_matches(&pkt.out_iface, i),
         MatchKind::State(states) | MatchKind::CtState(states) => {
-            let mask: u8 = states.iter().map(|s| parse_state_bit(s)).fold(0, |a, b| a | b);
+            let mask: u8 = states
+                .iter()
+                .map(|s| parse_state_bit(s))
+                .fold(0, |a, b| a | b);
             // Si la máscara es 0 (estados desconocidos), no filtramos
             mask == 0 || (pkt.state & mask != 0)
         }
@@ -88,39 +91,69 @@ mod tests {
 
     #[test]
     fn test_proto_match() {
-        let m = Match { negated: false, kind: MatchKind::Protocol("tcp".into()) };
+        let m = Match {
+            negated: false,
+            kind: MatchKind::Protocol("tcp".into()),
+        };
         assert!(matches_packet(&m, &pkt()));
-        let m2 = Match { negated: false, kind: MatchKind::Protocol("udp".into()) };
+        let m2 = Match {
+            negated: false,
+            kind: MatchKind::Protocol("udp".into()),
+        };
         assert!(!matches_packet(&m2, &pkt()));
     }
 
     #[test]
     fn test_proto_negated() {
-        let m = Match { negated: true, kind: MatchKind::Protocol("udp".into()) };
+        let m = Match {
+            negated: true,
+            kind: MatchKind::Protocol("udp".into()),
+        };
         assert!(matches_packet(&m, &pkt()));
     }
 
     #[test]
     fn test_src_cidr() {
-        let m = Match { negated: false, kind: MatchKind::Source("192.168.1.0/24".into()) };
+        let m = Match {
+            negated: false,
+            kind: MatchKind::Source("192.168.1.0/24".into()),
+        };
         assert!(matches_packet(&m, &pkt()));
-        let m2 = Match { negated: false, kind: MatchKind::Source("10.0.0.0/8".into()) };
+        let m2 = Match {
+            negated: false,
+            kind: MatchKind::Source("10.0.0.0/8".into()),
+        };
         assert!(!matches_packet(&m2, &pkt()));
     }
 
     #[test]
     fn test_dport() {
-        let m = Match { negated: false, kind: MatchKind::DPort(PortSpec { start: 80, end: 80 }) };
+        let m = Match {
+            negated: false,
+            kind: MatchKind::DPort(PortSpec { start: 80, end: 80 }),
+        };
         assert!(matches_packet(&m, &pkt()));
-        let m2 = Match { negated: false, kind: MatchKind::DPort(PortSpec { start: 443, end: 443 }) };
+        let m2 = Match {
+            negated: false,
+            kind: MatchKind::DPort(PortSpec {
+                start: 443,
+                end: 443,
+            }),
+        };
         assert!(!matches_packet(&m2, &pkt()));
     }
 
     #[test]
     fn test_state_new() {
-        let m = Match { negated: false, kind: MatchKind::State(vec!["NEW".into()]) };
+        let m = Match {
+            negated: false,
+            kind: MatchKind::State(vec!["NEW".into()]),
+        };
         assert!(matches_packet(&m, &pkt()));
-        let m2 = Match { negated: false, kind: MatchKind::State(vec!["ESTABLISHED".into()]) };
+        let m2 = Match {
+            negated: false,
+            kind: MatchKind::State(vec!["ESTABLISHED".into()]),
+        };
         assert!(!matches_packet(&m2, &pkt()));
     }
 
@@ -138,9 +171,15 @@ mod tests {
 
     #[test]
     fn test_iface_wildcard() {
-        let m = Match { negated: false, kind: MatchKind::InInterface("eth+".into()) };
+        let m = Match {
+            negated: false,
+            kind: MatchKind::InInterface("eth+".into()),
+        };
         assert!(matches_packet(&m, &pkt()));
-        let m2 = Match { negated: false, kind: MatchKind::InInterface("eth*".into()) };
+        let m2 = Match {
+            negated: false,
+            kind: MatchKind::InInterface("eth*".into()),
+        };
         assert!(matches_packet(&m2, &pkt()));
     }
 }

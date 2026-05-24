@@ -3,6 +3,7 @@ use std::net::IpAddr;
 use ipnet::IpNet;
 
 /// Una interfaz de red del firewall simulado.
+#[allow(dead_code)]
 pub struct Interface {
     pub name: String,
     pub zone: String,
@@ -13,6 +14,7 @@ pub struct Interface {
 }
 
 /// Un host en la topología simulada.
+#[allow(dead_code)]
 pub struct Host {
     pub name: String,
     pub ip: IpAddr,
@@ -26,6 +28,7 @@ pub struct Topology {
     /// IPs que pertenecen al propio firewall (el castillo).
     pub local_ips: Vec<IpAddr>,
     pub interfaces: Vec<Interface>,
+    #[allow(dead_code)]
     pub hosts: Vec<Host>,
 }
 
@@ -103,11 +106,8 @@ pub fn topology_from_level(
         .map(|i| {
             // Usar la IP propia de la interfaz si se especifica en el YAML;
             // si no, usar la IP principal del firewall.
-            let iface_ip: Option<IpAddr> = i
-                .ip
-                .as_deref()
-                .and_then(|s| s.parse().ok())
-                .or(Some(fw_ip));
+            let iface_ip: Option<IpAddr> =
+                i.ip.as_deref().and_then(|s| s.parse().ok()).or(Some(fw_ip));
 
             // Registrar la IP como local (para que `is_local` enrute al INPUT
             // los paquetes dirigidos a cualquier interfaz del firewall).

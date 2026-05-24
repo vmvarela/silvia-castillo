@@ -22,6 +22,7 @@ impl Proto {
         }
     }
 
+    #[allow(dead_code)]
     pub fn as_str(self) -> &'static str {
         match self {
             Proto::Tcp => "tcp",
@@ -67,6 +68,7 @@ pub struct Packet {
     pub state: u8,
 }
 
+#[allow(dead_code)]
 impl Packet {
     pub fn with_src_ip(mut self, ip: impl Into<String>) -> Self {
         self.src_ip = ip.into();

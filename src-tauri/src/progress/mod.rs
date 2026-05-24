@@ -62,8 +62,8 @@ impl FileStore {
 
     /// Guarda el progreso en disco de forma atómica (tmp + rename).
     pub fn save(&self, p: &Progress) -> Result<(), String> {
-        let data =
-            serde_json::to_string_pretty(p).map_err(|e| format!("Error serializando progreso: {e}"))?;
+        let data = serde_json::to_string_pretty(p)
+            .map_err(|e| format!("Error serializando progreso: {e}"))?;
         let tmp = self.path.with_extension("json.tmp");
         std::fs::write(&tmp, data)
             .map_err(|e| format!("Error escribiendo fichero temporal: {e}"))?;

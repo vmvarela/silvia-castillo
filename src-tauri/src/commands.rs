@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use crate::engine::ast::ParsedRule;
 use crate::engine::packet::{parse_state_bit, Packet, Proto};
 use crate::engine::parser::parse_line;
 use crate::engine::pipeline::evaluate;
 use crate::engine::ruleset::{Ruleset, RulesetView};
 use crate::engine::topology::topology_from_level;
-use crate::engine::ast::ParsedRule;
 use crate::levels;
 use crate::progress::Progress;
 use crate::state::AppState;
@@ -341,8 +341,17 @@ pub fn get_progress(state: tauri::State<'_, AppState>) -> Result<ProgressView, S
 fn humanize_rule(rule: &ParsedRule) -> String {
     use crate::engine::ast::RuleCommand;
     match &rule.command {
-        RuleCommand::Append { chain, matches, target }
-        | RuleCommand::Insert { chain, matches, target, .. } => {
+        RuleCommand::Append {
+            chain,
+            matches,
+            target,
+        }
+        | RuleCommand::Insert {
+            chain,
+            matches,
+            target,
+            ..
+        } => {
             let chain_name = format!("{chain:?}").to_uppercase();
             let target_desc = humanize_target(target);
             if matches.is_empty() {
@@ -350,16 +359,14 @@ fn humanize_rule(rule: &ParsedRule) -> String {
             } else {
                 let conditions = matches
                     .iter()
-                    .filter_map(|m| humanize_match(m))
+                    .filter_map(humanize_match)
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("En {chain_name}: si llega {conditions}, {target_desc}.")
             }
         }
         RuleCommand::Flush { chain: None } => "Vaciar todas las cadenas.".into(),
-        RuleCommand::Flush { chain: Some(c) } => {
-            format!("Vaciar cadena {:?}.", c).to_uppercase()
-        }
+        RuleCommand::Flush { chain: Some(c) } => format!("Vaciar cadena {:?}.", c).to_uppercase(),
         RuleCommand::Policy { chain, target } => {
             format!(
                 "Política por defecto de {:?}: {}.",
