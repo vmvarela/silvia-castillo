@@ -1,3 +1,7 @@
+/* xterm.js requiere su CSS para ocultar los elementos de medición de caracteres.
+   Sin esto, los spans internos de medición aparecen visibles sobre el terminal. */
+@import '@xterm/xterm/css/xterm.css';
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

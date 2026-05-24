@@ -1,0 +1,243 @@
+id: "09-examen-silvia"
+titulo: "El Gran Examen de la Academia"
+cuento: |
+  Ha llegado el día más importante en la vida de Silvia. El Gran Consejo de la
+  Academia de Guardianes la convoca ante las puertas de un castillo virgen: sin
+  leyes, sin guardias, sin historia. Todo lo que ha aprendido en los niveles
+  anteriores desemboca aquí. Debe construirlo todo desde los cimientos.
+
+  El castillo gobierna tres fronteras. El portón interior (eth0) da al Torreón
+  de los nobles (LAN, 192.168.1.x): allí viven la Biblioteca Secreta del reino
+  (PC3, 192.168.1.3) y el Mercado de Intercambios (MULTISERVER, 192.168.1.20).
+  El portón central (eth1) da al Patio de Armas (DMZ, 10.0.0.x): allí trabaja
+  el Taller de Pergaminos (WWW, 10.0.0.5), accesible desde el mundo exterior y
+  desde el Torreón. El portón exterior (eth2) abre a los Reinos Lejanos (WAN).
+
+  El castillo mismo aloja la Sala del Gran Consejo (WEBMIN, puerto 10000) y
+  mantiene un correo secreto con su único aliado en los reinos lejanos
+  (6.6.6.6, solo SSH). El administrador del castillo vive fuera, en su casa
+  (8.8.8.8), y debe poder llegar en secreto a la Biblioteca Secreta de forma
+  remota. El heraldo mayor ya ha activado el enrutamiento entre portones.
+
+  La primera ordenanza del Consejo es clara: todo lo que no esté explícitamente
+  permitido queda vetado. Silvia debe dictar las leyes desde los cimientos.
+  ¿Está preparada para el Gran Examen?
+mision: "Construye las leyes del castillo desde cero: políticas DROP, NAT, servicios y accesos según las diez ordenanzas del Consejo."
+red:
+  firewall_ip: "192.168.1.1"
+  interfaces:
+    - nombre: eth0
+      zona: lan
+      cidr: "192.168.1.0/24"
+      ip: "192.168.1.1"
+    - nombre: eth1
+      zona: dmz
+      cidr: "10.0.0.0/24"
+      ip: "10.0.0.1"
+    - nombre: eth2
+      zona: wan
+      cidr: "0.0.0.0/0"
+      ip: "203.0.113.1"
+  hosts:
+    - nombre: "Noble del Torreón"
+      ip: "192.168.1.10"
+      zona: lan
+      iface: eth0
+    - nombre: "Biblioteca Secreta (PC3)"
+      ip: "192.168.1.3"
+      zona: lan
+      iface: eth0
+    - nombre: "Mercado de Intercambios (MULTISERVER)"
+      ip: "192.168.1.20"
+      zona: lan
+      iface: eth0
+    - nombre: "Taller de Pergaminos (WWW)"
+      ip: "10.0.0.5"
+      zona: dmz
+      iface: eth1
+    - nombre: "Aliado Secreto"
+      ip: "6.6.6.6"
+      zona: wan
+      iface: eth2
+    - nombre: "Casa del Administrador"
+      ip: "8.8.8.8"
+      zona: wan
+      iface: eth2
+    - nombre: "Aldea Lejana"
+      ip: "203.0.113.5"
+      zona: wan
+      iface: eth2
+politicas:
+  INPUT: ACCEPT
+  OUTPUT: ACCEPT
+  FORWARD: ACCEPT
+reglas_iniciales: []
+pistas:
+  - "Ordenanza I — Dicta las leyes maestras de bloqueo total: -P INPUT DROP, -P FORWARD DROP, -P OUTPUT DROP"
+  - "Ordenanza II — Permite el regreso de los mensajeros ya enviados: -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT (y lo mismo para FORWARD y OUTPUT)"
+  - "Ordenanza III — Iza el Estandarte del Castillo para que Torreón y Patio salgan al mundo: -t nat -A POSTROUTING -o eth2 -j MASQUERADE y abre FORWARD desde eth0 y eth1 hacia eth2"
+  - "Ordenanza IV — Los heraldos de fuego del exterior son RECHAZADOS (REJECT, no DROP): -A INPUT -i eth2 -p icmp -j REJECT. Pero acepta los heraldos del Torreón (-i eth0) y del Patio (-i eth1)"
+  - "Ordenanza V — El castillo solo puede escribir en secreto a su aliado: -A OUTPUT -p tcp -d 6.6.6.6 --dport 22 -j ACCEPT"
+  - "Ordenanza VI — El Taller es accesible desde los Reinos Lejanos mediante DNAT (puerta secreta): PREROUTING en eth2 para puertos 80 y 443, luego autoriza el FORWARD al Taller (10.0.0.5)"
+  - "Ordenanza VI (bis) — Los nobles también acceden al Taller directamente (sin DNAT): -A FORWARD -i eth0 -o eth1 -p tcp -d 10.0.0.5 --dport 80 -j ACCEPT (y puerto 443)"
+  - "Ordenanza VII — La Biblioteca Secreta solo atiende al Taller, nunca a los reinos: -A FORWARD -i eth1 -o eth0 -s 10.0.0.5 -d 192.168.1.3 -p tcp --dport 3306 -j ACCEPT"
+  - "Ordenanza VIII — El Mercado de Intercambios solo atiende a forasteros: DNAT desde eth2 al puerto 4662 (tcp y udp) y FORWARD al Mercado (192.168.1.20)"
+  - "Ordenanzas IX y X — La Sala del Gran Consejo (puerto 10000) solo para nobles del Torreón: -A INPUT -i eth0 -p tcp --dport 10000 -j ACCEPT. El administrador accede a la Biblioteca desde su casa (8.8.8.8) mediante DNAT al puerto 22"
+pruebas:
+  - descripcion: "Los mensajeros de vuelta entran sin obstáculos (INPUT ESTABLISHED)"
+    src_ip: "203.0.113.5"
+    dst_ip: "203.0.113.1"
+    dst_port: 80
+    proto: tcp
+    estado: ESTABLISHED
+    in_iface: eth2
+    esperado: ACCEPT
+  - descripcion: "Los nobles salen al mundo con el Estandarte del Castillo (LAN → WAN)"
+    src_ip: "192.168.1.10"
+    dst_ip: "203.0.113.5"
+    dst_port: 80
+    proto: tcp
+    estado: NEW
+    in_iface: eth0
+    out_iface: eth2
+    esperado: ACCEPT
+  - descripcion: "El Patio de Armas sale al mundo con el Estandarte (DMZ → WAN)"
+    src_ip: "10.0.0.5"
+    dst_ip: "203.0.113.5"
+    dst_port: 80
+    proto: tcp
+    estado: NEW
+    in_iface: eth1
+    out_iface: eth2
+    esperado: ACCEPT
+  - descripcion: "Heraldo forastero rechazado en la puerta (REJECT ICMP desde WAN)"
+    src_ip: "203.0.113.5"
+    dst_ip: "203.0.113.1"
+    dst_port: 0
+    proto: icmp
+    estado: NEW
+    in_iface: eth2
+    esperado: REJECT
+  - descripcion: "Heraldo noble bienvenido en la puerta (ACCEPT ICMP desde LAN)"
+    src_ip: "192.168.1.10"
+    dst_ip: "192.168.1.1"
+    dst_port: 0
+    proto: icmp
+    estado: NEW
+    in_iface: eth0
+    esperado: ACCEPT
+  - descripcion: "El castillo escribe en secreto a su aliado (OUTPUT SSH a 6.6.6.6)"
+    src_ip: "192.168.1.1"
+    dst_ip: "6.6.6.6"
+    dst_port: 22
+    proto: tcp
+    estado: NEW
+    esperado: ACCEPT
+  - descripcion: "El castillo no escribe a desconocidos (OUTPUT SSH a otro reino bloqueado)"
+    src_ip: "192.168.1.1"
+    dst_ip: "203.0.113.5"
+    dst_port: 22
+    proto: tcp
+    estado: NEW
+    esperado: DROP
+  - descripcion: "Viajero accede al Taller de Pergaminos por HTTP (WAN → WWW:80 vía DNAT)"
+    src_ip: "203.0.113.5"
+    dst_ip: "203.0.113.1"
+    dst_port: 80
+    proto: tcp
+    estado: NEW
+    in_iface: eth2
+    esperado: ACCEPT
+  - descripcion: "Viajero accede al Taller de Pergaminos por HTTPS (WAN → WWW:443 vía DNAT)"
+    src_ip: "203.0.113.5"
+    dst_ip: "203.0.113.1"
+    dst_port: 443
+    proto: tcp
+    estado: NEW
+    in_iface: eth2
+    esperado: ACCEPT
+  - descripcion: "Noble accede al Taller directamente por HTTP (LAN → WWW:80)"
+    src_ip: "192.168.1.10"
+    dst_ip: "10.0.0.5"
+    dst_port: 80
+    proto: tcp
+    estado: NEW
+    in_iface: eth0
+    out_iface: eth1
+    esperado: ACCEPT
+  - descripcion: "El Taller consulta la Biblioteca Secreta (WWW → PC3:3306)"
+    src_ip: "10.0.0.5"
+    dst_ip: "192.168.1.3"
+    dst_port: 3306
+    proto: tcp
+    estado: NEW
+    in_iface: eth1
+    out_iface: eth0
+    esperado: ACCEPT
+  - descripcion: "Los forasteros no acceden directamente a la Biblioteca (WAN → PC3:3306 bloqueado)"
+    src_ip: "203.0.113.5"
+    dst_ip: "192.168.1.3"
+    dst_port: 3306
+    proto: tcp
+    estado: NEW
+    in_iface: eth2
+    out_iface: eth0
+    esperado: DROP
+  - descripcion: "Forastero llega al Mercado de Intercambios TCP (WAN → EMULE:4662 vía DNAT)"
+    src_ip: "203.0.113.5"
+    dst_ip: "203.0.113.1"
+    dst_port: 4662
+    proto: tcp
+    estado: NEW
+    in_iface: eth2
+    esperado: ACCEPT
+  - descripcion: "Forastero llega al Mercado de Intercambios UDP (WAN → EMULE:4662 vía DNAT)"
+    src_ip: "203.0.113.5"
+    dst_ip: "203.0.113.1"
+    dst_port: 4662
+    proto: udp
+    estado: NEW
+    in_iface: eth2
+    esperado: ACCEPT
+  - descripcion: "El Patio no comercia en el Mercado de Intercambios (DMZ → EMULE:4662 bloqueado)"
+    src_ip: "10.0.0.5"
+    dst_ip: "192.168.1.20"
+    dst_port: 4662
+    proto: tcp
+    estado: NEW
+    in_iface: eth1
+    out_iface: eth0
+    esperado: DROP
+  - descripcion: "Noble accede a la Sala del Gran Consejo (LAN → Firewall:10000)"
+    src_ip: "192.168.1.10"
+    dst_ip: "192.168.1.1"
+    dst_port: 10000
+    proto: tcp
+    estado: NEW
+    in_iface: eth0
+    esperado: ACCEPT
+  - descripcion: "Forastero no entra a la Sala del Gran Consejo (WAN → Firewall:10000 bloqueado)"
+    src_ip: "203.0.113.5"
+    dst_ip: "203.0.113.1"
+    dst_port: 10000
+    proto: tcp
+    estado: NEW
+    in_iface: eth2
+    esperado: DROP
+  - descripcion: "El administrador accede a la Biblioteca desde su casa (SSH 8.8.8.8 → PC3 vía DNAT)"
+    src_ip: "8.8.8.8"
+    dst_ip: "203.0.113.1"
+    dst_port: 22
+    proto: tcp
+    estado: NEW
+    in_iface: eth2
+    esperado: ACCEPT
+  - descripcion: "Forastero desconocido no puede administrar la Biblioteca (SSH otro WAN → PC3 bloqueado)"
+    src_ip: "203.0.113.5"
+    dst_ip: "203.0.113.1"
+    dst_port: 22
+    proto: tcp
+    estado: NEW
+    in_iface: eth2
+    esperado: DROP
+recompensa: "¡Gran Examen superado con honores! Silvia ha construido desde los cimientos el castillo más seguro del reino. El Gran Consejo la nombra Guardiana Maestra: el castillo es suyo."

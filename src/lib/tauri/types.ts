@@ -74,3 +74,21 @@ export type ExecuteResult = {
   humanize: string | null;
   ruleset: RulesetView;
 };
+
+export type LevelInfo = { index: number; id: string; titulo: string; locked: boolean };
+
+export type HostView = { nombre: string; ip: string; zona: string; iface: string };
+
+export type LevelView = {
+  index: number; id: string; titulo: string; cuento: string; mision: string;
+  pistas: string[]; recompensa: string; hosts: HostView[]; ruleset: RulesetView;
+};
+
+export type TestResult = {
+  index: number; descripcion: string; src_ip: string; dst_ip: string; dst_port: number;
+  proto: string; estado: string; esperado: string; got: string; passed: boolean;
+};
+
+export type CheckResult = { results: TestResult[]; all_passed: boolean; score: number };
+
+export type ProgressView = { unlocked_until: number; completed: string[] };

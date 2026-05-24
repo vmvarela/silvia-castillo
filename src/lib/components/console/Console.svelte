@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { executeCommand } from '$lib/tauri/commands';
   import type { ExecuteResult } from '$lib/tauri/types';
+  import { audio } from '$lib/audio.svelte';
 
   // Props
   let { onResult }: { onResult?: (r: ExecuteResult) => void } = $props();
@@ -50,9 +51,11 @@
         if (result.humanize) {
           term?.write('\x1b[32m→ ' + result.humanize + '\x1b[0m');
         }
+        audio.commandOk();
       } else {
         const msg = result.error ?? 'Error desconocido';
         term?.write('\x1b[31m✗ ' + msg + '\x1b[0m');
+        audio.commandError();
       }
       onResult?.(result);
     } catch (e) {
@@ -140,22 +143,33 @@
       cursorBlink: true,
       cursorStyle: 'block',
       scrollback: 1000,
-      convertEol: true,
     });
 
     fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.loadAddon(new WebLinksAddon());
+
+    // Esperar a que las fuentes estén cargadas ANTES de que xterm abra el canvas
+    // y mida el ancho de glifo. Si se hace después, charWidth queda mal y la
+    // línea 1 se corrompe (aparece como '$$$' en WKWebView macOS).
+    await document.fonts.ready;
     term.open(container);
     fitAddon.fit();
 
-    // Welcome message
-    term.writeln('\x1b[33m╔══════════════════════════════════════╗\x1b[0m');
-    term.writeln('\x1b[33m║  🏰  Castillo de Silvia  🐥           ║\x1b[0m');
-    term.writeln('\x1b[33m╚══════════════════════════════════════╝\x1b[0m');
-    term.writeln('\x1b[90mEscribe comandos iptables y pulsa Enter.\x1b[0m');
-    term.writeln('\x1b[90mCtrl+C para cancelar · Ctrl+L para limpiar · ↑↓ historial\x1b[0m');
-    term.write(PROMPT);
+    // Diferir el banner un tick para que xterm complete la inicialización del canvas.
+    // Welcome message — WKWebView macOS no renderiza box-drawing horizontales
+    // (U+2500-U+257F): aparecen como '$'. Solución: ASCII puro, sin emoji.
+    setTimeout(() => {
+      if (!term) return;
+      // reset() borra los artefactos de medición que xterm escribe en línea 0 durante open()
+      term.reset();
+      term.writeln('\x1b[33m  +--------------------------------------+\x1b[0m');
+      term.writeln('\x1b[1;33m  |       Castillo de Silvia            |\x1b[0m');
+      term.writeln('\x1b[33m  +--------------------------------------+\x1b[0m');
+      term.writeln('\x1b[90mEscribe comandos iptables y pulsa Enter.\x1b[0m');
+      term.writeln('\x1b[90mCtrl+C cancelar  Ctrl+L limpiar  flechas historial\x1b[0m');
+      term.write(PROMPT);
+    }, 0);
 
     // Key handler
     term.onKey(({ key, domEvent }) => {
@@ -178,6 +192,7 @@
 
       lineBuffer += key;
       term?.write(key);
+      audio.typing();
     });
 
     // Resize observer

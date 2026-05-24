@@ -1,0 +1,7 @@
+# Configuración de Cargo para silvia-castillo (src-tauri)
+
+[env]
+# En macOS, el linker necesita SDKROOT para encontrar libiconv y los frameworks del sistema.
+# Sin esta variable, el build falla con "ld: library 'iconv' not found".
+# force = false → no sobreescribe si ya está definida en el entorno (útil en CI).
+SDKROOT = { value = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk", force = false }
