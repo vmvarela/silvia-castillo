@@ -33,6 +33,7 @@
     errorMsg = null;
     level = null;
     checkResult = null;
+    progress = null;
     showHints = false;
 
     loadLevel(currentIdx)
